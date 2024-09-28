@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "node server.js",
     "dev": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -11,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/client-elastic-beanstalk": "^3.658.1",
     "@google-cloud/vision": "^4.3.2",
     "aws-sdk": "^2.1691.0",
     "dotenv": "^16.4.5",

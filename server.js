@@ -24,6 +24,12 @@ const client = new vision.ImageAnnotatorClient({
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
+app.get('/', (req, res) => {
+    res.json({
+        message: 'Welcome to backend'
+    });
+});
+
 // Endpoint to upload media and process with Google Vision
 app.post('/upload', upload.single('file'), async (req, res) => {
   const file = req.file;
