@@ -6,6 +6,12 @@ const vision = require('@google-cloud/vision');
 const path = require('path');
 const fs = require('fs');
 const cors = require('cors');
+const mongoose = require('mongoose');
+const Media = require('./models/Media');
+
+mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('Connected to MongoDB Atlas'))
+  .catch((err) => console.error('Error connecting to MongoDB', err));
 
 const app = express();
 
@@ -46,7 +52,7 @@ app.get('/', (req, res) => {
     });
 });
 
-// Endpoint to upload media and process with Google Vision
+// Updated /upload endpoint
 app.post('/upload', upload.single('file'), async (req, res) => {
   console.log('Upload route hit');
   const file = req.file;
@@ -58,7 +64,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 
   try {
     console.log('Attempting to upload to S3');
-    // S3 upload code
+    // Upload to S3
     const s3Upload = await s3.upload({
       Bucket: process.env.S3_BUCKET_NAME,
       Key: `uploads/${Date.now()}-${file.originalname}`,
@@ -68,39 +74,32 @@ app.post('/upload', upload.single('file'), async (req, res) => {
     console.log('S3 upload successful');
 
     console.log('Calling Google Vision API');
-    console.log('File buffer length:', file.buffer.length);
-    console.log('File mimetype:', file.mimetype);
-    
-    // Call Google Vision API for image tagging
+    // Get tags from Google Vision API
     const [result] = await client.labelDetection(file.buffer);
-    console.log('Google Vision API response:', JSON.stringify(result, null, 2));
-    
     const labels = result.labelAnnotations.map(label => label.description);
     console.log('Extracted labels:', labels);
 
-    // Respond with the S3 URL and the tags
+    console.log('Saving data to MongoDB Atlas');
+    // Save data to MongoDB Atlas
+    const media = new Media({
+      userId: req.body.userId || 'defaultUser', // Adjust if needed
+      fileUrl: s3Upload.Location,
+      tags: labels,
+    });
+    await media.save();
+    console.log('Data saved to MongoDB Atlas');
+
+    // Respond with file URL and tags
     res.json({
       message: 'File uploaded successfully',
       fileUrl: s3Upload.Location,
       tags: labels,
     });
   } catch (err) {
-    console.error('Detailed error:', err);
-    console.error('Error stack:', err.stack);
-    res.status(500).json({
-      error: 'Error uploading file or processing image',
-      details: err.message,
-      stack: err.stack,
-      googleCredentials: {
-        projectId: process.env.GOOGLE_CLOUD_PROJECT_ID ? 'Set' : 'Not set',
-        clientEmail: process.env.GOOGLE_CLOUD_CLIENT_EMAIL ? 'Set' : 'Not set',
-        privateKey: process.env.GOOGLE_CLOUD_PRIVATE_KEY ? `Set (length: ${process.env.GOOGLE_CLOUD_PRIVATE_KEY.length})` : 'Not set'
-      },
-      fileInfo: file ? {
-        originalname: file.originalname,
-        mimetype: file.mimetype,
-        size: file.size
-      } : 'No file info available'
+    console.error('Error processing image:', err);
+    res.status(500).json({ 
+      error: 'Error processing image',
+      details: err.message
     });
   }
 });
