@@ -5,9 +5,11 @@ const AWS = require('aws-sdk');
 const vision = require('@google-cloud/vision');
 const path = require('path');
 const fs = require('fs');
+const cors = require('cors');
 
 const app = express();
 
+app.use(cors());
 // Configure AWS SDK
 const s3 = new AWS.S3({
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
@@ -32,13 +34,16 @@ app.get('/', (req, res) => {
 
 // Endpoint to upload media and process with Google Vision
 app.post('/upload', upload.single('file'), async (req, res) => {
+  console.log('Upload route hit');
   const file = req.file;
 
   if (!file) {
+    console.log('No file uploaded');
     return res.status(400).send('No file uploaded.');
   }
 
   try {
+    console.log('Attempting to upload to S3');
     // Upload the file to AWS S3
     const params = {
       Bucket: process.env.S3_BUCKET_NAME,
@@ -50,9 +55,14 @@ app.post('/upload', upload.single('file'), async (req, res) => {
     const s3Upload = await s3.upload(params).promise();
     const fileUrl = s3Upload.Location;
 
+    console.log('S3 upload successful');
+
+    console.log('Calling Google Vision API');
     // Call Google Vision API for image tagging
     const [result] = await client.labelDetection(file.buffer);
     const labels = result.labelAnnotations.map(label => label.description);
+
+    console.log('Google Vision API call successful');
 
     // Respond with the S3 URL and the tags
     res.json({
@@ -61,12 +71,28 @@ app.post('/upload', upload.single('file'), async (req, res) => {
       tags: labels,
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).send('Error uploading file or processing image.');
+    console.error('Detailed error:', err);
+    console.error('Error stack:', err.stack);
+    res.status(500).json({
+      error: 'Error uploading file or processing image',
+      details: err.message,
+      stack: err.stack
+    });
   }
 });
 
-const PORT = process.env.PORT || 3001;
+// Test environment variables route
+app.get('/test-env', (req, res) => {
+  res.json({
+    AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID ? 'Set' : 'Not set',
+    AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY ? 'Set' : 'Not set',
+    AWS_REGION: process.env.AWS_REGION,
+    S3_BUCKET_NAME: process.env.S3_BUCKET_NAME,
+    GOOGLE_APPLICATION_CREDENTIALS: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+  });
+});
+
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
