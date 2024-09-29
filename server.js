@@ -20,35 +20,7 @@ const s3 = new AWS.S3({
 // Configure Google Cloud Vision
 let client;
 try {
-    const privateKey = `-----BEGIN PRIVATE KEY-----
-MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDHaaRnotbV4bbX
-nuNcvJ7iM+7O/ZtP8acwoHXoDEUQTg1y2BgL6FEKGY132+JPHMJbIWf5Aq336Msb
-RQgsBu8YwZqn/qQfLLw5EpYSMWYFiMiba3sjXrN/xB0N4W2jqmYpx0lNKiSRnxVo
-oDM+aShN0+cWsGaWVQOvtJAygDodV9fMFVz9iyc6jP/V90zxFHP3Q10D3PX6Jmsj
-h2QmXDQzvJGL3m6gumfzDD6RKBQ1r4v1ITaOK+glBK52oilSPOC/jRBqyjy4MV69
-ReCjIBOmNo44WR1R3w9ElLtnOOruhLZWAK0yr2GYsXQb2SrTmX0u1fXVosLQyDu/
-QMsh0LuVAgMBAAECggEAEaiZvfGuG5+SzPJNiPtNCJP3vE258LDiEMzM1CEuBn0a
-9MYNDxTiBEZyACCxIDdYQLCrH+JsXG05ey84Q4nTp3oRg3npt7cC7fzm3DKSqb/M
-n/K7I00yEQjhV8bUKi+fP2jd5V7rgRe40hyJnSe7wXSX3Kr/UqWxn2AaetZfDxT9
-lmoVqLYrajrVSqUFkL2luitbSE5XwdHlBpKeTpJ14XyYUAnoaGdKgGqn89hiUk43
-s5hGbTpsqNRi4wIEc1//QG9icG3Kn+JvKtyRBNYGytep5wG/M5OgQPJakqSOOjHC
-NhGSRQ2cFfAP0yKU92UO6eucOhUNbPza3+1QW11aEQKBgQD6IhtDwBUoHWsU76Gj
-vPtazyTtOPyVWW0lDtLtd0Myq5R25IqsUV8FfbEsh6/LVKXbLCXsWMV1eR/Y0ADq
-EEeaWzERizpkJFVRAKUAmWld+h+XzFF1YfXiKIBCEFaSSEjqkjHzAfbVakHPcEnQ
-fKByc60iveZ7gom44UtaloQrzQKBgQDMFv2O3zPeO7Z2I1lKdn+MVuUurVD9qCv9
-9de8ZLx8Dakd0uCb2m5g8xDnLsuU393/fOmk96xH9eN6yUiVzwzpvTzWJQyRgak8
-Me6gaWOezmkFWJ1FuylMqwo9QosORENSM6Oo5Kf/7WjWqWFttKRg8pWTFCZum2eQ
-FoXvjgZW6QKBgQCTwTvrzHZy6NXNWzRXXZX48W31t3j03AtuHZCZd565OsOLa7tC
-yRphSvsyu8ArUwhaLH0GXPXfS7p1P4Gawh0Z4A5fN6g5aYEARWoyrWyhd9PbvnTL
-6x7tBlGlNLN+27Y+4jchPiLJtGfFmqXvwv6gPRaj9BtHEDg8ftEdZNYUbQKBgC2f
-+iFFfrfwy3KPpneCFDOQfX2420FJpkQJAKiqMITfHO6A5RuScliUHjRAftySS3PB
-Pg5WHBqeOrOJagOrnOxoFMCe2bdxsB633uvXg6DN7iZ2z/n1xF7SYeCeDq4qzo4C
-41RvgasyLNzIUvKOjqzprkyKFalmbnmEv351Vq95AoGAIcefxOOhdMNGjU+z6AOT
-geob4/B8bcxnGtfCdpG2YA67bxTJoVWDLCLRBAodrGb/O8x97BWOPZFIqUgK88XQ
-pHG+RpG6FQKpbq+rALSf414l6YfOmwO9Q7KGjUTc5xRJfIIxorVfUjGusuv6Vct/
-5wiFr3nvDpTQKTgukdVm2PU=
------END PRIVATE KEY-----`;
-
+  const privateKey = process.env.GOOGLE_CLOUD_PRIVATE_KEY.replace(/\\n/g, '\n');
   client = new vision.ImageAnnotatorClient({
     credentials: {
       client_email: process.env.GOOGLE_CLOUD_CLIENT_EMAIL,
@@ -133,7 +105,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
   }
 });
 
-app.post('/test-vision', upload.single('file'), async (req, res) => {
+app.post('/vision', upload.single('file'), async (req, res) => {
   const file = req.file;
   if (!file) {
     return res.status(400).send('No file uploaded.');
