@@ -18,9 +18,19 @@ const s3 = new AWS.S3({
 });
 
 // Configure Google Cloud Vision
-const client = new vision.ImageAnnotatorClient({
-  keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS,
-});
+let client;
+try {
+  client = new vision.ImageAnnotatorClient({
+    credentials: {
+      client_email: process.env.GOOGLE_CLOUD_CLIENT_EMAIL,
+      private_key: process.env.GOOGLE_CLOUD_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    },
+    projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
+  });
+  console.log('Google Cloud Vision client initialized successfully');
+} catch (error) {
+  console.error('Error initializing Google Cloud Vision client:', error);
+}
 
 // Multer configuration for handling file uploads
 const storage = multer.memoryStorage();
@@ -76,7 +86,12 @@ app.post('/upload', upload.single('file'), async (req, res) => {
     res.status(500).json({
       error: 'Error uploading file or processing image',
       details: err.message,
-      stack: err.stack
+      stack: err.stack,
+      googleCredentials: {
+        projectId: process.env.GOOGLE_CLOUD_PROJECT_ID ? 'Set' : 'Not set',
+        clientEmail: process.env.GOOGLE_CLOUD_CLIENT_EMAIL ? 'Set' : 'Not set',
+        privateKey: process.env.GOOGLE_CLOUD_PRIVATE_KEY ? 'Set (length: ' + process.env.GOOGLE_CLOUD_PRIVATE_KEY.length + ')' : 'Not set'
+      }
     });
   }
 });
@@ -88,7 +103,9 @@ app.get('/test-env', (req, res) => {
     AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY ? 'Set' : 'Not set',
     AWS_REGION: process.env.AWS_REGION,
     S3_BUCKET_NAME: process.env.S3_BUCKET_NAME,
-    GOOGLE_APPLICATION_CREDENTIALS: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+    GOOGLE_CLOUD_PROJECT_ID: process.env.GOOGLE_CLOUD_PROJECT_ID ? 'Set' : 'Not set',
+    GOOGLE_CLOUD_PRIVATE_KEY: process.env.GOOGLE_CLOUD_PRIVATE_KEY ? 'Set' : 'Not set',
+    GOOGLE_CLOUD_CLIENT_EMAIL: process.env.GOOGLE_CLOUD_CLIENT_EMAIL ? 'Set' : 'Not set',
   });
 });
 
